@@ -1,0 +1,20 @@
+app = FastAPI(title="Armanos")  
+
+def create_item(item: ItemCreate, db: Session = Depends(get_db)):
+    if db.query(Item).filter(Item.name == item.name).first():
+        raise HTTPException(status_code=400, detail="Item already exists")
+    db_item = Item(**item.model_dump())
+    db.add(db_item)
+    db.commit()
+    db.refresh(db_item)
+    return db_item
+
+def list_items(db: Session = Depends(get_db)):
+    return db.query(Item).all()
+ 
+def trigger_average_price(
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    background_tasks.add_task(compute_average_price, db)
+    return {"detail": "Average price computation started in background"}
